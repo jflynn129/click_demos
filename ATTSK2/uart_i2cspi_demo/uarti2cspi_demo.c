@@ -22,50 +22,61 @@
 
 #define _delay(x) (usleep(x*1000))   //macro to provide ms pauses
 
-#define INT_M1       GPIO_PIN_94  //slot #1
-#define INT_M2       GPIO_PIN_7   //slot #2
-#define GPIO_PIN_XYZ INT_M1
+#define MICROBUS_RST
+#define MICROBUS_CS
+#define MICROBUS_INT
 
 spi_handle_t  myspi = (spi_handle_t)0;
-gpio_handle_t csPin; //spi chipselect pin
+gpio_handle_t rstPin; 
+gpio_handle_t csPin; 
+gpio_handle_t intPin; 
 
-static void platform_init(void)
+platform_init()
 {
     spi_bus_init(SPI_BUS_II, &myspi);
     spi_format(myspi, SPIMODE_CPOL_0_CPHA_0, SPI_BPW_8);
     spi_frequency(myspi, 960000);
 
-    gpio_init(GPIO_PIN_95, &csPin);
+    gpio_init(MICROBUS_RST, &rstPin);
+    gpio_dir(rstPin, GPIO_DIR_OUTPUT);
+    gpio_write(rstPin,  GPIO_LEVEL_HIGH );       
+
+    gpio_init(MICROBUS_CS, &csPin);
     gpio_dir(csPin, GPIO_DIR_OUTPUT);
-    gpio_write(csPin,  GPIO_LEVEL_HIGH );         // RST is active low
+    gpio_write(csPin,  GPIO_LEVEL_HIGH );         
+
+    gpio_init(MICROBUS_INT, &intPin);
+    gpio_dir(intPin, GPIO_DIR_INPUT);
 }
 
-
-static int32_t platform_write(void *handle, uint8_t Reg, uint8_t *Bufp, uint16_t len)
+uint8_t platform_ReadRegister(uint8_t reg_addr)
 {
-    uint8_t *buff;
-
-    buff = malloc(len+1);
-    buff[0] = Reg;
-    memcpy(&buff[1], Bufp, len);
-
-    gpio_write( csPin,  GPIO_LEVEL_HIGH );
-    int r=spi_transfer(myspi, buff, (uint32_t)len+1, NULL, (uint32_t)0);
-    gpio_write( csPin,  GPIO_LEVEL_LOW );
-    free(buff);
-    return r;
+    uint8_t result, addr=0x80|(reg_addr<<3);
+    if ( protocol == SC16IS750_PROTOCOL_I2C ) 
+        // read from reg_address if using i2c bus here
+    else { //using SPI
+        gpio_write( csPin,  GPIO_LEVEL_LOW );
+        spi_transfer(myspi, (uint8_t*)&addr, (uint32_t)1, (uint8_t*)&result, (uint32_t)1);
+        gpio_write( csPin,  GPIO_LEVEL_LOW );
+        }
+    return result;
 }
 
-static int32_t platform_read(void *handle, uint8_t Reg, uint8_t *Bufp, uint16_t len)
+void platform_WriteRegister(uint8_t reg_addr, uint8_t val)
 {
-    Reg |= 0x80;
+    if ( protocol == SC16IS750_PROTOCOL_I2C ) 
+        // send reg_addr and val via i2c bus here
+    else { //using SPI
+        uint8_t buff[2];
+        buff[0] = reg_addr<<3;
+        buff[1] = val;
 
-    gpio_write( csPin,  GPIO_LEVEL_HIGH );
-    spi_transfer(myspi, (uint8_t*)&Reg, (uint32_t)1, Bufp, (uint32_t)1000);
-    gpio_write( csPin,  GPIO_LEVEL_LOW );
-    return 0;
+        gpio_write( csPin,  GPIO_LEVEL_LOW );
+        spi_transfer(myspi, buff, (uint32_t)2, NULL, (uint32_t)0);
+        gpio_write( csPin,  GPIO_LEVEL_LOW );
+    }
+    return ;
 }
-
 
 void usage (void)
 {
@@ -129,11 +140,22 @@ int main(int argc, char *argv[])
             }
         }
     else if( terminal_mode ) {
+        uint8_t ch;
+        int     done=i=0;
         while( difftime(time_now.tv_sec, time_start.tv_sec) < run_time ) {
-            if( uartspi_ready() ) {
-                collect input up to CR
-            if CR received
-                echo back time and recived input
+            if( !done && uartspi_readable() ) {
+                ch=uartspi_getc();
+                done =  (ch == '\r');
+                rxbuff[i++] = ch;
+                }
+            if( done && uartspi_writable() ) {
+                gettimeofday(&time_now, NULL);
+                sprintf(txbuff, "time is %d.%d: (%d chars) %s",time_now.tv_sec,time_now.tv_usec,i,rxbuff);
+                uartspi_write(txbuff,strlen(txbuff));
+                memset(txbuff, 0x00, sizeof(txbuff));
+                memset(rxbuff, 0x00, sizeof(rxbuff));
+                done=i=0;
+                }
             }
         }
     else{
