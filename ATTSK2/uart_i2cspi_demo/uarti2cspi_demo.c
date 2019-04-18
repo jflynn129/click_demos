@@ -20,6 +20,8 @@
 #include "lsm6dsl.h"
 #include <hwlib/hwlib.h>
 
+#define _delay(x) (usleep(x*1000))   //macro to provide ms pauses
+
 #define INT_M1       GPIO_PIN_94  //slot #1
 #define INT_M2       GPIO_PIN_7   //slot #2
 #define GPIO_PIN_XYZ INT_M1
@@ -67,31 +69,33 @@ static int32_t platform_read(void *handle, uint8_t Reg, uint8_t *Bufp, uint16_t 
 
 void usage (void)
 {
-    printf(" The 'lcdmini_demo' program can be started with several options:\n");
-    printf(" -r X        : Set run time in seconds for demo to run\n");
-    printf(" -t \"testing\": Set the text to use during demo run\n");
-    printf(" -?          : Display usage info\n");
+    printf(" The 'uarti2cspi_demo' program can be started with several options:\n");
+    printf(" -l   : run in loopback (Rx connected to TX line\n");
+    printf(" -d X : run time in seconds (X) for loopback test\n");
+    printf(" -t   : run in terminal mode (connected via uart to a different device)\n");
+    printf(" -?   : Display usage info\n");
 }
 
 int main(int argc, char *argv[]) 
 {
-    int           i, run_time = 30;  //default to 3 seconds
-    uint8_t       m;
+    int           i, loopback_test=0, terminal_mode=0, run_time=30;
     struct        timeval time_start, time_now;
-    axis3bit16_t  data_raw_acceleration;
-    axis3bit16_t  data_raw_angular_rate;
-    axis1bit16_t  data_raw_temperature;
-    float         acceleration_mg[3];
-    float         angular_rate_mdps[3];
-    float         temperature_degC;
 
-    lsm6dsl_ctx_t dev_ctx;
-
-    while((i=getopt(argc,argv,"r:?")) != -1 )
+    while((i=getopt(argc,argv,"d:lt?")) != -1 )
         switch(i) {
-           case 'r':
-               sscanf(optarg,"%x",&run_time);
-               printf(">> run-time set to %d seconds ",run_time);
+           case 'd':
+               sscanf(optarg,"%d",&run_time);
+               printf(">> run loop back for %d seconds ",run_time);
+               break;
+           case 'l':
+               loopback_test = 1;
+               terminal_mode = 0;
+               printf(">> run loop-back test");
+               break;
+           case 't':
+               loopback_test = 0;
+               terminal_mode = 1;
+               printf(">> running in terminal mode");
                break;
            case '?':
                usage();
@@ -104,71 +108,39 @@ int main(int argc, char *argv[])
     printf("\n\n");
     printf("     ****\r\n");
     printf("    **  **     SW reuse using C example\r\n");
-    printf("   **    **    for the ST LSM6DSL Click\r\n");
+    printf("   **    **    for the UART I2C/SPI Click\r\n");
     printf("  ** ==== **\r\n");
     printf("\r\n");
-
-    platform_init();
-    dev_ctx.write_reg = platform_write;
-    dev_ctx.read_reg  = platform_read;
-    dev_ctx.handle    = NULL;
-
-    m = 0;
-    lsm6dsl_device_id_get(&dev_ctx, &m);
-    if ( m != LSM6DSL_ID )
-        exit(EXIT_FAILURE);
-
-    lsm6dsl_reset_set(&dev_ctx, PROPERTY_ENABLE);   // Restore default configuration
-
-    while( m ) {
-        lsm6dsl_reset_get(&dev_ctx, &m);
-
-    lsm6dsl_block_data_update_set(&dev_ctx, PROPERTY_ENABLE); // Enable Block Data Update
-    lsm6dsl_xl_data_rate_set(&dev_ctx, LSM6DSL_XL_ODR_12Hz5); // Set Output Data Rate 
-    lsm6dsl_gy_data_rate_set(&dev_ctx, LSM6DSL_GY_ODR_12Hz5); 
-    lsm6dsl_xl_full_scale_set(&dev_ctx, LSM6DSL_2g);
-    lsm6dsl_gy_full_scale_set(&dev_ctx, LSM6DSL_2000dps);     // Set full scale
-  
-    /* Configure filtering chain */  
-    lsm6dsl_xl_filter_analog_set(&dev_ctx, LSM6DSL_XL_ANA_BW_400Hz); // Accelerometer - analog filter 
-    lsm6dsl_xl_lp2_bandwidth_set(&dev_ctx, LSM6DSL_XL_LOW_NOISE_LP_ODR_DIV_100); // Accelerometer - LPF1 + LPF2 path
-    lsm6dsl_gy_band_pass_set(&dev_ctx, LSM6DSL_HP_260mHz_LP1_STRONG); // Gyroscope - filtering chain
 
     gettimeofday(&time_start, NULL);
     time_now = time_start;
 
-    while( difftime(time_now.tv_sec, time_start.tv_sec) < run_time ) {
-        lsm6dsl_reg_t reg;
-        lsm6dsl_status_reg_get(&dev_ctx, &reg.status_reg);
+    if( loopback_test ) {
+        uint8_t ch = 0x55;
 
-        if (reg.status_reg.xlda) { /* Read magnetic field data */
-            memset(data_raw_acceleration.u8bit, 0x00, 3*sizeof(int16_t));
-            lsm6dsl_acceleration_raw_get(&dev_ctx, data_raw_acceleration.u8bit);
-            acceleration_mg[0] = lsm6dsl_from_fs2g_to_mg( data_raw_acceleration.i16bit[0]);
-            acceleration_mg[1] = lsm6dsl_from_fs2g_to_mg( data_raw_acceleration.i16bit[1]);
-            acceleration_mg[2] = lsm6dsl_from_fs2g_to_mg( data_raw_acceleration.i16bit[2]);
-            printf("Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n", acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
-            } 
-
-        if (reg.status_reg.gda) { /* Read magnetic field data */
-            memset(data_raw_angular_rate.u8bit, 0x00, 3*sizeof(int16_t));
-            lsm6dsl_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate.u8bit);
-            angular_rate_mdps[0] = lsm6dsl_from_fs2000dps_to_mdps(data_raw_angular_rate.i16bit[0]);
-            angular_rate_mdps[1] = lsm6dsl_from_fs2000dps_to_mdps(data_raw_angular_rate.i16bit[1]);
-            angular_rate_mdps[2] = lsm6dsl_from_fs2000dps_to_mdps(data_raw_angular_rate.i16bit[2]);
-            printf("Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
-          }    
-
-        if (reg.status_reg.tda) {   /* Read temperature data */
-            memset(data_raw_temperature.u8bit, 0x00, sizeof(int16_t));
-            lsm6dsl_temperature_raw_get(&dev_ctx, data_raw_temperature.u8bit);
-            temperature_degC = lsm6dsl_from_lsb_to_celsius( data_raw_temperature.i16bit );
-            printf("Temperature [degC]:%6.2f\r\n", temperature_degC );
+        while( difftime(time_now.tv_sec, time_start.tv_sec) < run_time ) {
+            uartspi_putc(ch);
+            _delay(10);
+            if (uartspi_getc()!=ch) 
+                fprintf( stderr, "!! ERROR, loopback failed.\n");
+            ch = (ch==0x55)? 0xAA:0x55;
+            _delay(500);
+            gettimeofday(&time_now, NULL);
             }
-
-        gettimeofday(&time_now, NULL);
         }
-    }
+    else if( terminal_mode ) {
+        while( difftime(time_now.tv_sec, time_start.tv_sec) < run_time ) {
+            if( uartspi_ready() ) {
+                collect input up to CR
+            if CR received
+                echo back time and recived input
+            }
+        }
+    else{
+        fprintf (stderr, "ERROR: must specify a test type...\n");
+        usage();
+        exit(EXIT_FAILURE);
+        }
 
     printf("DONE...\n");
     exit(EXIT_SUCCESS);
