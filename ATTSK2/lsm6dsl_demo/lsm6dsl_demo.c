@@ -20,50 +20,56 @@
 #include "lsm6dsl.h"
 #include <hwlib/hwlib.h>
 
-#define INT_M1       GPIO_PIN_94  //slot #1
-#define INT_M2       GPIO_PIN_7   //slot #2
-#define GPIO_PIN_XYZ INT_M1
+#define MIKRO_INT       GPIO_PIN_94  //slot #1 = GPIO_PIN_94; slot #2 = GPIO_PIN_7
+#define MIKRO_CS        GPIO_PIN_3   //slot #1 = GPIO_PIN_3 ; slot #2 = GPIO_PIN_SPI1_EN
 
 spi_handle_t  myspi = (spi_handle_t)0;
-gpio_handle_t csPin; //spi chipselect pin
+gpio_handle_t csPin;  //spi chipselect pin
+gpio_handle_t intPin; //interrupt pin
 
 static void platform_init(void)
 {
+printf("JMF:platform_init()\n");
     spi_bus_init(SPI_BUS_II, &myspi);
-    spi_format(myspi, SPIMODE_CPOL_0_CPHA_0, SPI_BPW_8);
+    spi_format(myspi, SPIMODE_CPOL_1_CPHA_1, SPI_BPW_8);
     spi_frequency(myspi, 960000);
 
-    gpio_init(GPIO_PIN_95, &csPin);
+    gpio_init(MIKRO_CS, &csPin);
     gpio_dir(csPin, GPIO_DIR_OUTPUT);
     gpio_write(csPin,  GPIO_LEVEL_HIGH );         // RST is active low
+
+    gpio_init(MIKRO_INT, &intPin);
+    gpio_dir(intPin, GPIO_DIR_INPUT);
+}
+
+static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
+{
+    reg |= 0x80;
+
+printf("platform_read();reg=0x%02X, len=%d ",reg,len);
+    gpio_write( csPin,  GPIO_LEVEL_LOW );
+    spi_transfer(myspi, &reg, 1, bufp, len);
+    gpio_write( csPin,  GPIO_LEVEL_HIGH );
+printf("read 0x%02X\n",*bufp);
+    return 0;
 }
 
 
-static int32_t platform_write(void *handle, uint8_t Reg, uint8_t *Bufp, uint16_t len)
+static int32_t platform_write(void *handle, uint8_t Reg, uint8_t *bufp, uint16_t len)
 {
     uint8_t *buff;
 
     buff = malloc(len+1);
     buff[0] = Reg;
-    memcpy(&buff[1], Bufp, len);
+    memcpy(&buff[1], bufp, len);
 
-    gpio_write( csPin,  GPIO_LEVEL_HIGH );
-    int r=spi_transfer(myspi, buff, (uint32_t)len+1, NULL, (uint32_t)0);
+printf("platform_write(); Reg=0x%02X, val=0x%02X\n",Reg,*bufp);
     gpio_write( csPin,  GPIO_LEVEL_LOW );
+    spi_transfer(myspi, buff, len+1, NULL, (uint32_t)0);
+    gpio_write( csPin,  GPIO_LEVEL_HIGH );
     free(buff);
-    return r;
-}
-
-static int32_t platform_read(void *handle, uint8_t Reg, uint8_t *Bufp, uint16_t len)
-{
-    Reg |= 0x80;
-
-    gpio_write( csPin,  GPIO_LEVEL_HIGH );
-    spi_transfer(myspi, (uint8_t*)&Reg, (uint32_t)1, Bufp, (uint32_t)1000);
-    gpio_write( csPin,  GPIO_LEVEL_LOW );
     return 0;
 }
-
 
 void usage (void)
 {
@@ -115,6 +121,13 @@ int main(int argc, char *argv[])
 
     m = 0;
     lsm6dsl_device_id_get(&dev_ctx, &m);
+printf("JMF:LSM6DSL_ID(0x%02X) = 0x%02X\n",LSM6DSL_ID,m);
+
+    lsm6dsl_spi_mode_set(&dev_ctx, 1);
+
+    m = 0;
+    lsm6dsl_device_id_get(&dev_ctx, &m);
+printf("JMF:LSM6DSL_ID(0x%02X) = 0x%02X\n",LSM6DSL_ID,m);
     if ( m != LSM6DSL_ID )
         exit(EXIT_FAILURE);
 

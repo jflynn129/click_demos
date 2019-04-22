@@ -17,10 +17,10 @@ AM_CXXFLAGS = -std=c++14 -std=gnu++11
 clean-generic:
 	-$(MAKE) 
 
-bin_PROGRAMS = lcdmini_demo
+bin_PROGRAMS = lsm6dsl_demo
 
-lcdmini_demo_SOURCES = lsm6dsl_demo.c
-lcdmini_demo_LDADD = libclick.a 
+lsm6dsl_demo_SOURCES = lsm6dsl_demo.c
+lsm6dsl_demo_LDADD = libclick.a 
 
 noinst_LIBRARIES = libclick.a 
 
