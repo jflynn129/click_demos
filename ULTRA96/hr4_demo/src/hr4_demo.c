@@ -37,9 +37,14 @@
 // RST pin Click Mezzanine site 2 is EMIO7 is so address of HD_GPIO_14 is 9
 #define CLICK2_INT  (EMIO_BASE+9)
 
-//
-// GPIO functionallity
-//
+// Linux pin number to Xilinx pin numbers are weird and have a large
+// base number than can change between different releases of Linux
+#define MIO_BASE    338
+// EMIOs start after MIO and there is a fixed offset of 78 for ZYNQ US+
+#define EMIO_BASE   (MIO_BASE+78)
+
+#define SOCKET1_INT    (EMIO_BASE+8)  // HD_GPIO_8
+#define SOCKET2_INT    (EMIO_BASE+15) // HD_GPIO_15
 
 static void __gpioOpen(int gpio)
 {
