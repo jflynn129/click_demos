@@ -30,8 +30,8 @@
 #define MIO_BASE    334           // MIMO base starts here but the
 #define EMIO_BASE   (MIO_BASE+78) // EMIO base is where the IO's are located 
 
-#define SOCKET1_INT    (EMIO_BASE+8)  // HD_GPIO_8
-#define SOCKET2_INT    (EMIO_BASE+15) // HD_GPIO_15
+#define SOCKET1_INT    (EMIO_BASE+7)  // HD_GPIO_8
+#define SOCKET2_INT    (EMIO_BASE+14) // HD_GPIO_15
 
 static void __gpioOpen(int gpio)
 {
@@ -66,20 +66,6 @@ static void __gpioDirection(int gpio, int direction) // 1 for output, 0 for inpu
         write(fd, "in", 2);
     close(fd);
 }
-
-#if 0
-static void __gpioSet(int gpio, int value)
-{
-    char buf[50];
-    sprintf(buf, "/sys/class/gpio/gpio%d/value", gpio);
-    int fd = open(buf, O_WRONLY);
-
-    sprintf(buf, "%d", value);
-    write(fd, buf, 1);
-    close(fd);
-}
-
-#endif
 
 static int __gpioRead(int gpio)
 {
