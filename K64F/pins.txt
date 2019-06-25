@@ -1,0 +1,28 @@
+SLOT#1
+AN           - A0
+RST          - A3
+CS           - D10
+SCK          - D13
+MISO         - D12
+MOSI         - D11
+SDA          - A14
+SCL          - A15
+TX           - D1
+RX           - D0
+INT          - D2
+PWM          - D6
+
+SLOT#2
+AN           - A1
+RST          - A2
+CS           - D9
+SCK          - D13
+MISO         - D12
+MOSI         - D11
+SDA          - A4
+SCL          - A5
+TX           - D1
+RX           - D0
+INT          - D3
+PWM          - D5
+
