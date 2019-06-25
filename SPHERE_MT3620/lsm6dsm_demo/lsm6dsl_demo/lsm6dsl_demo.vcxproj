@@ -49,7 +49,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">C:\Users\043674\source\repos\jflynn129\click_demos\clickmodule\TEMP_HUM;C:\Users\043674\source\repos\jflynn129\click_demos\clickmodule\BAROMETER;C:\Users\043674\source\repos\jflynn129\click_demos\clickmodule\OLED-B;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">..\..\..\clickmodule\TEMP_HUM;..\..\..\clickmodule\BAROMETER;..\..\..\clickmodule\OLED-B;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
