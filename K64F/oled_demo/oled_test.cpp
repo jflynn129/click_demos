@@ -1,16 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/un.h>
-#include <sys/syscall.h>
-#include <sys/socket.h>
-
-#include <hwlib/hwlib.h>
+#include "mbed.h"
 
 #include "oledb_ssd1306.h"
 #include "Avnet_GFX.h"
@@ -18,16 +6,12 @@
 #define DISP_NORMAL     0
 #define DISP_REVERSED   1
 
-#define _delay(x)	(usleep(x*1000))
+#define _delay(x)	wait_ms(x)
 #define _max(x,y)        ((x>y)?x:y)
 
 #define NUMFLAKES       10 // Number of snowflakes in the animation example
 #define LOGO_HEIGHT     16
 #define LOGO_WIDTH      16
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 static unsigned char logo_bmp[] = {
    0b00000000, 0b10000000,
@@ -137,7 +121,7 @@ void testdrawline(OLEDB_SSD1306* ptr)
         _delay(100);
         }
 
-    sleep(2); // Pause for 2 seconds
+    wait(2); // Pause for 2 seconds
 }
 
 void testdrawrect(OLEDB_SSD1306* ptr) 
@@ -150,7 +134,7 @@ void testdrawrect(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testfillrect(OLEDB_SSD1306* ptr) 
@@ -164,7 +148,7 @@ void testfillrect(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testdrawcircle(OLEDB_SSD1306* ptr) 
@@ -177,7 +161,7 @@ void testdrawcircle(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testfillcircle(OLEDB_SSD1306* ptr) 
@@ -191,7 +175,7 @@ void testfillcircle(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testdrawroundrect(OLEDB_SSD1306* ptr) 
@@ -204,7 +188,7 @@ void testdrawroundrect(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testfillroundrect(OLEDB_SSD1306* ptr) 
@@ -218,7 +202,7 @@ void testfillroundrect(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testdrawtriangle(OLEDB_SSD1306* ptr) 
@@ -234,7 +218,7 @@ void testdrawtriangle(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testfilltriangle(OLEDB_SSD1306* ptr) 
@@ -250,7 +234,7 @@ void testfilltriangle(OLEDB_SSD1306* ptr)
         _delay(500);
         }
 
-    sleep(2);
+    wait(2);
 }
 
 void testdrawchar(OLEDB_SSD1306* ptr) 
@@ -270,7 +254,7 @@ void testdrawchar(OLEDB_SSD1306* ptr)
         }
 
     oledb_display(ptr, DISP_REVERSED);
-    sleep(10);
+    wait(10);
 }
 
 void testdrawstyles(OLEDB_SSD1306* ptr) 
@@ -291,7 +275,7 @@ void testdrawstyles(OLEDB_SSD1306* ptr)
     AvnetGFX_printText("%8X",0xDEADBEEF);
   
     oledb_display(ptr, DISP_REVERSED);
-    sleep(4);
+    wait(4);
     oledb_clrDispBuff(ptr);
 }
 
@@ -309,19 +293,19 @@ void testscrolltext(OLEDB_SSD1306* ptr)
 
     // Scroll in various directions, pausing in-between:
     oledb_startscrollright(ptr, 0x00, 0x07);
-    sleep(2);
+    wait(2);
     oledb_stopscroll(ptr);
-    sleep(1);
+    wait(1);
     oledb_startscrollleft(ptr, 0x00, 0x07);
-    sleep(2);
+    wait(2);
     oledb_stopscroll(ptr);
-    sleep(1);
+    wait(1);
     oledb_startscrolldiagright(ptr, 0x00, 0x07);
-    sleep(2);
+    wait(2);
     oledb_startscrolldiagleft(ptr, 0x00, 0x07);
-    sleep(2);
+    wait(2);
     oledb_stopscroll(ptr);
-    sleep(1);
+    wait(1);
 }
 
 void testdrawbitmap(OLEDB_SSD1306* ptr) 
@@ -375,7 +359,7 @@ void oledb_test(OLEDB_SSD1306* ptr) {
     printf("Draw a single pixel in white\n");
     AvnetGFX_writePixel(48, 20, WHITE);
     oledb_display(ptr,DISP_NORMAL);
-    sleep(2);
+    wait(2);
 
     printf("Draw many lines\n");
     testdrawline(ptr);      // Draw many lines
@@ -419,15 +403,15 @@ void oledb_test(OLEDB_SSD1306* ptr) {
   
     printf("Draw a small bitmap image\n");
     testdrawbitmap(ptr);
-    sleep(5);
+    wait(5);
   
     printf("Invert display\n");
     oledb_invertDisplay(ptr,1);
-    sleep(2);
+    wait(2);
   
     printf("Restore display\n");
     oledb_invertDisplay(ptr,0);
-    sleep(2);
+    wait(2);
   
     printf("Animation \n");
     testanimate(ptr, logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
@@ -437,7 +421,7 @@ void oledb_test(OLEDB_SSD1306* ptr) {
     AvnetGFX_setTextColor(1,1);        // Draw white text
     AvnetGFX_setCursor(0,0);             // Start at top-left corner
     AvnetGFX_printText("All Done!\n---------");
-    sleep(2);
+    wait(2);
 
     oledb_clrDispBuff(ptr);
     printf("Display Logo\n");
@@ -447,8 +431,4 @@ void oledb_test(OLEDB_SSD1306* ptr) {
     oledb_display(ptr,DISP_REVERSED);
 }
 
-
-#ifdef __cplusplus
-}
-#endif
 

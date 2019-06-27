@@ -9,12 +9,15 @@
 #include "barometer.h"
 #include "hts221.h"
 
+#define LPS25HV_8BIT_SAD (LPS25HB_SAD<<1)
+#define HTS221_8BIT_SAD  (HTS221_SAD<<1)
+
 I2C i2c_1(D14,D15); //only Slot #1 works due to I2C pinout
 
 uint8_t read_barometer_i2c( uint8_t addr ) {
     unsigned char value_read = 0;
-    i2c_1.write(LPS25HB_SAD<<1, (char*)&addr, 1, 1);
-    i2c_1.read(LPS25HB_SAD<<1, (char*)&value_read, 1);
+    i2c_1.write(LPS25HB_8BIT_SAD, (char*)&addr, 1, 1);
+    i2c_1.read(LPS25HB_8BIT_SAD, (char*)&value_read, 1);
     return value_read;
     }
 
@@ -22,13 +25,13 @@ void write_barometer_i2c( uint8_t addr, uint8_t val ) {
     char buff[2];
     buff[0] = addr;
     buff[1] = val;
-    i2c_1.write(LPS25HB_SAD<<1, buff, 2);
+    i2c_1.write(LPS25HB_8BIT_SAD, buff, 2);
     }
 
 uint8_t read_hts221_i2c( uint8_t addr ) {
     char value_read = 0;
-    i2c_1.write(HTS221_SAD<<1, (char*)&addr, 1, 1);
-    i2c_1.read(HTS221_SAD<<1, &value_read, 1);
+    i2c_1.write(HTS221_8BIT_SAD, (char*)&addr, 1, 1);
+    i2c_1.read(HTS221_8BIT_SAD, &value_read, 1);
     return value_read;
     }
 
@@ -37,7 +40,7 @@ void write_hts221_i2c( uint8_t addr, uint8_t val ) {
     buff[0] = addr;
     buff[1] = val;
 
-    i2c_1.write(HTS221_SAD<<1, buff, 2);
+    i2c_1.write(HTS221_8BIT_SAD, buff, 2);
 }
 
 int main(int argc, char *argv[]) 
