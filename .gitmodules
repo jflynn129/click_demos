@@ -1,4 +1,0 @@
-[submodule "clickmodules"]
-	path = clickmodules
-	url = ./clickmodules
-        branch = master
