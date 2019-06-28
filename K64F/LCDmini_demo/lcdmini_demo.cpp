@@ -7,9 +7,10 @@
 //
 PwmOut      bpwmPin(D5);
 InterruptIn intPin(D3);  //input
-DigitalOut  rstPin(A2,0);  //active low
+
+DigitalOut  rstPin(A2,1);  //active low
 DigitalOut  cs2Pin(A1,1);  //active low
-DigitalOut  csPin(D13,1);  //active low
+DigitalOut  csPin(D9,1);  //active low
 SPI         spi(D11, D12, D13); // mosi, miso, sclk
 
 int jim_trace=0;
@@ -19,12 +20,12 @@ int jim_trace=0;
 void init(void)
 {
 printf("JMF:init called.\n");
-    rstPin = 0;
+    rstPin = 1;
     cs2Pin = 1;
     csPin = 1;
 
-    spi.format(8,3);
-    spi.frequency(1000000);
+    spi.format(8,0);
+    spi.frequency(960000);
 
     bpwmPin.period_ms(PWM_PERIOD);
     bpwmPin.write(PWM_PERIOD);
@@ -81,10 +82,12 @@ void fpwm(int state)
 */
 void spi_tx(uint8_t* data_to_send, int length)
 {
-if( jim_trace ) printf("spi.write %d bytes (",length);
-if( jim_trace ) printf(" OPCODE = 0x%02X, ",data_to_send[0]);
-if( jim_trace ) printf(" ADDRES = 0x%02X, ",data_to_send[1]);
-if( jim_trace ) printf(" VALUE  = 0x%02X) ",data_to_send[2]);
+if( jim_trace ){
+ printf("spi.write %d bytes (",length);
+ printf(" OPCODE = 0x%02X, ",data_to_send[0]);
+ printf(" ADDRES = 0x%02X, ",data_to_send[1]);
+ printf(" VALUE  = 0x%02X) ",data_to_send[2]);
+}
     spi.write((const char *)data_to_send, length, NULL, 0);
 } 
 
@@ -124,34 +127,23 @@ int main(int argc, char *argv[])
     open_lcdmini(init, cs, cs2, rst, fpwm, spi_tx, delay_us);
     lcd_setBacklight(bcklight);
     lcd_setContrast(cntrst);
-jim_trace=1;
     lcd_clearDisplay();
-jim_trace=0;
 
     printf("\r\nPrint a message to MINI LCD\n\r");
     fflush(stdout);
-#if 0
-jim_trace=1;
-printf("call lcd_setcursor(4,1)\n");
-    lcd_setCursor(4, 1);
-printf("call lcd_printf(\"01234567\")\n");
-    lcd_printf("01234567");
-#endif
-//    lcd_setCursor(2, 0);
-//    lcd_printf("89      ");
 
-//    for( int t=0; t<60; t++ ) {
-//
-//        lcd_setCursor(4, 1);
-//        lcd_printf("B1 count: %2d",b1_cnt);
-//        lcd_setCursor(2, 0);
-//        lcd_printf("B2 count: %2d",b2_cnt);
-//
-//        printf("B1 count:%2d\n",b1_cnt);
-//        printf("B2 count:%2d\n",b2_cnt);
-//        fflush(stdout);
-//        wait(1);
-//        }
+    for( int t=0; t<60; t++ ) {
+
+        lcd_setCursor(0, 1);
+        lcd_printf("Switch #2: %2d",b1_cnt);
+        lcd_setCursor(0, 0);
+        lcd_printf("Switch #3: %2d",b2_cnt);
+
+        printf("B1 count:%2d\n",b1_cnt);
+        printf("B2 count:%2d\n",b2_cnt);
+        fflush(stdout);
+        wait(1);
+        }
 
     printf("Done...\r\n");
     exit(EXIT_SUCCESS);
